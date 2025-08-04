@@ -8,7 +8,7 @@ langchainhub
 # Web Framework for the API
 fastapi
 uvicorn
-
+gunicorn
 # For loading API keys from the .env file
 python-dotenv
 

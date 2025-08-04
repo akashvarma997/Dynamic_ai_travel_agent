@@ -4,6 +4,7 @@
 langchain
 langchain-openai
 langchainhub
+langchain-community
 
 # Web Framework for the API
 fastapi

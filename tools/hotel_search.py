@@ -34,26 +34,19 @@ class HotelSearchTool(BaseTool):
             if not rapidapi_key:
                 return "Error: RapidAPI Key is not configured."
             
-            print(f"rapidapi_key: {rapidapi_key}")  # Debugging line to check if the key is loaded
-
-            # --- START: NEW, SIMPLER API LOGIC ---
             
             destination_id_url = "https://hotels4.p.rapidapi.com/locations/v3/search"
             locations_list_url = "https://hotels4.p.rapidapi.com/properties/v2/list"
-            # 2a. The API needs day, month, and year separately. We parse the date strings.
             check_in_date_obj = datetime.strptime(check_in, "%Y-%m-%d")
             check_out_date_obj = datetime.strptime(check_out, "%Y-%m-%d")
 
             querystring = {"q":location,"locale":"en_US","langid":"1033","siteid":"300000001"}
             
             headers = {
-                "content-type": "application/json",
-                "x-rapidapi-key": "1db3e0c830msh3882a1dc5722774p1a4488jsn03f5f4c3ad7c",
+                "x-rapidapi-key": rapidapi_key,
                 "x-rapidapi-host": "hotels4.p.rapidapi.com"
             }
             
-            # This API uses a POST request instead of GET
-            print(f"DEBUG: Searching for hotels in: {location}")
             print(f"DEBUG: Searching for destination ID for location: {location}")
             response = requests.get(destination_id_url,headers=headers,params=querystring)
             response.raise_for_status()
@@ -68,49 +61,43 @@ class HotelSearchTool(BaseTool):
                 "eapid": 1,
                 "locale": "en_US",
                 "siteId": 300000001,
-                "destination": {
-                    "regionId": destination_id  # Using the dynamic ID we just found
-                },
-                "checkInDate": {
-                    "day": check_in_date_obj.day,
-                    "month": check_in_date_obj.month,
-                    "year": check_in_date_obj.year
-                },
-                "checkOutDate": {
-                    "day": check_out_date_obj.day,
-                    "month": check_out_date_obj.month,
-                    "year": check_out_date_obj.year
-                },
-                "rooms": [
-                    {
-                        "adults": adults
-                    }
-                ],
+                "destination": {"regionId": destination_id},
+                "checkInDate": {"day": check_in_date_obj.day, "month": check_in_date_obj.month, "year": check_in_date_obj.year},
+                "checkOutDate": {"day": check_out_date_obj.day, "month": check_out_date_obj.month, "year": check_out_date_obj.year},
+                "rooms": [{"adults": adults}],
                 "resultsStartingIndex": 0,
                 "resultsSize": 200,
                 "sort": "PRICE_LOW_TO_HIGH"
             }
 
             headers["Content-Type"] = "application/json"
-            # print(f"DEBUG: Searching for hotels with payload: {payload}")
             properties_response = requests.post(locations_list_url, json=payload, headers=headers)
             properties_response.raise_for_status()
             properties_data = properties_response.json()
             
-            # --- END: NEW, SIMPLER API LOGIC ---
-
             hotel_list = properties_data.get('data', {}).get('propertySearch', {}).get('properties', [])
             if not hotel_list:
                 return "No hotels found for the specified criteria."
+
             
-            summary = f"Found {len(hotel_list)} hotels in {location}. Here are the top 5:\n"
-            for hotel in hotel_list[:5]:
+            hotel_summaries = []
+            for hotel in hotel_list[:5]: # Take the top 5 hotels
                 name = hotel.get('name', 'N/A')
-                price_display = hotel.get('price', {}).get('displayMessages', [{}])[0].get('lineItems', [{}])[0].get('value', 'N/A')
                 rating = hotel.get('reviews', {}).get('score', 'N/A')
-                summary += f"- {name} (Rating: {rating}/10) - Price: {price_display}\n"
+                
+                # extracting the price
+                price_display = "N/A"
+                try:
+                    price_display = hotel['price']['displayMessages'][0]['lineItems'][0]['value']
+                except (KeyError, IndexError, TypeError):
+                    pass # Keep price as "N/A" if not found
+                
+                # Creating a simple, data-focused string for each hotel
+                summary = f"Name: {name}, Rating: {rating}/10, Price: {price_display}"
+                hotel_summaries.append(summary)
             
-            return summary
+            # Return a clean list of data, separated by newlines
+            return "\n".join(hotel_summaries)
 
         except requests.exceptions.RequestException as e:
             return f"Error making API request: {e}"

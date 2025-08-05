@@ -5,8 +5,10 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import langchain
 
-# Import the factory function from the 'agent' package
+# langchain.debug = True
+
 from agent.factory import get_session_agent
 
 # Load environment variables from .env file
@@ -30,7 +32,7 @@ allowed_origins = [
     "http://localhost:5173",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
-    "https://ai-travelagent.netlify.app"  # <-- ADD YOUR NETLIFY URL HERE
+    "https://ai-travelagent.netlify.app"
 ]
 
 # Add CORS middleware

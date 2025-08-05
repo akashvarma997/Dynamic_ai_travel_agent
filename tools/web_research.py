@@ -37,9 +37,19 @@ class RealTimeRAGTool(BaseTool):
             retriever = vectorstore.as_retriever()
 
             system_prompt = (
-                "You are an assistant for question-answering tasks. Use the following pieces of retrieved "
-                "context to answer the question. If you don't know the answer, just say that you don't know. "
-                "Use three sentences maximum and keep the answer concise.\n\n{context}"
+                '''You are an expert Q&A assistant that is designed to answer questions based on a given context.
+
+                Your instructions are:
+                1.  **Prioritize the Context:** First, carefully analyze the provided `Context` to find the answer. Your primary goal is to synthesize an answer exclusively from this text.
+                2.  **Synthesize and Combine:** If the context contains relevant information but doesn't form a complete answer, you may supplement it with your own general knowledge to create a comprehensive response.
+                3.  **Be Transparent:** When you use your general knowledge to supplement the context, you must explicitly state it. For example, say "According to the provided documents..." and then "To provide more detail..."
+                4.  **Handle Irrelevant Context:** If the provided `Context` is not at all relevant to the question, state that the documents do not contain the answer, and then proceed to answer the question using your own knowledge.
+                5.  **Cite Your Sources:** When you use information from the context, add a citation like `` at the end of the relevant sentence.
+                6.  **If You Truly Don't Know:** If the question is about a topic you have no information on (neither in the context nor in your general knowledge), then it is appropriate to say that you don't know.
+                
+                below is the context:
+                {context}
+                '''
             )
             qa_prompt = ChatPromptTemplate.from_messages([("system", system_prompt), ("human", "{input}")])
             llm_qa = ChatOpenAI(model="gpt-4o", temperature=0)
